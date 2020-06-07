@@ -5,10 +5,11 @@
 #include "GetButtonClick.h"
 
 // KWP.  RX = Pin 2, TX = Pin 3
-#define pinKLineRX 12
-#define pinKLineTX 13
+#define pinKLineRX 12   // micropro tx 3
+#define pinKLineTX 13   // micropro rx 2
 KWP kwp(pinKLineRX, pinKLineTX);
 
+// micropro CDC 6, 7, 8
 #define stalkPushUp 24             // input stalk UP
 #define stalkPushDown 23           // input stalk DOWN
 #define stalkPushReset 22          // input stalk RESET
@@ -17,10 +18,9 @@ KWP kwp(pinKLineRX, pinKLineTX);
 #define stalkPushDownMonitor 23           // input stalk DOWN (to monitor when FIS Disabled)
 #define stalkPushResetMonitor 22          // input stalk RESET (to monitor when FIS Disabled)
 
-#define stalkPushUpReturn 30       // if FIS disable - use this to match stalk UP
-#define stalkPushDownReturn 31    // if FIS disable - use this to match stalk DOWN
-#define stalkPushResetReturn 32
-// if F`IS disable - use this to match stalk RESET
+#define stalkPushUpReturn 30        // if FIS disable - use this to match stalk UP
+#define stalkPushDownReturn 31      // if FIS disable - use this to match stalk DOWN
+#define stalkPushResetReturn 32     // if FIS disable - use this to match stalk RESET
 
 //Define ignition live sense as Pin 7
 #define ignitionMonitorPin 10
@@ -519,4 +519,3 @@ void loop()
     }
   }
 }
-
