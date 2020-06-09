@@ -1,8 +1,14 @@
 //Include FIS Writer and KWP
 #include "VW2002FISWriter.h"
 #include "KWP.h"
-#include "GetBootMessage.h"
 #include "AnalogMultiButton.h" // https://github.com/dxinteractive/AnalogMultiButton
+/* uncomment to enable boot message and boot image. Removed due excessive memory consumption */
+  //#define bootmsg show
+  //#define bootimg show
+
+#ifdef bootmsg
+  #include "GetBootMessage.h"
+#endif
 
 // KWP 
 #define pinKLineRX 5
@@ -10,22 +16,10 @@
 KWP kwp(pinKLineRX, pinKLineTX);
 
 // CDC
-const byte dinCDC = 6;
+/*const byte dinCDC = 6;
 const byte doutCDC = 7;
-const byte clkCDC = 8;
+const byte clkCDC = 8; */
 
-/*#define stalkPushUp 24             // input stalk UP
-#define stalkPushDown 23           // input stalk DOWN
-#define stalkPushReset 22          // input stalk RESET
-
-#define stalkPushUpMonitor 24             // input stalk UP (to monitor when FIS Disabled)
-#define stalkPushDownMonitor 23           // input stalk DOWN (to monitor when FIS Disabled)
-#define stalkPushResetMonitor 22          // input stalk RESET (to monitor when FIS Disabled)
-
-#define stalkPushUpReturn 30        // if FIS disable - use this to match stalk UP
-#define stalkPushDownReturn 31      // if FIS disable - use this to match stalk DOWN
-#define stalkPushResetReturn 32     // if FIS disable - use this to match stalk RESET
-*/
 //Buttons
 #define btn1PIN A3
 #define btn2PIN A2
@@ -49,31 +43,31 @@ const int NDASHBOARDGROUPS = 1;
 const int NABSGROUPS = 1;
 const int NAIRBAGGROUPS = 1;
 const int MAX_CONNECT_RETRIES = 5;
-const int NMODULES = 2;
+const int NMODULES = 3;
 
 //define engine groups
 //**********************************0, 1,2, 3, 4, 5, 6,   7,  8,  9,  10, 11, 12, 13, 14, 15, 16,  17,  18,  19)
 //Block 3, 5 don't work?
 int engineGroups[NENGINEGROUPS] = {2, 3, 4, 5, 6, 10, 11, 14, 15, 16, 20, 31, 32, 90, 91, 92, 113, 114, 115, 118};   //defined blocks to read
 int dashboardGroups[NDASHBOARDGROUPS] = {2};                    //dashboard groups to read
-//int absGroups[NDASHBOARDGROUPS] = { 1 };                          //abs groups to read
+int absGroups[NDASHBOARDGROUPS] = { 1 };                          //abs groups to read
 //int airbagGroups[NDASHBOARDGROUPS] = { 1 };                       //airbag groups to read
 
 //define engine as ECU, with ADR_Engine (address)
 KWP_MODULE engine = {"ECU", ADR_Engine, engineGroups, NENGINEGROUPS};
 KWP_MODULE dashboard = {"CLUSTER", ADR_Dashboard, dashboardGroups, NDASHBOARDGROUPS};
-//KWP_MODULE _abs = {"ABS", ADR_ABS_Brakes, absGroups, NABSGROUPS};
+KWP_MODULE absunit = {"ABS", ADR_ABS_Brakes, absGroups, NABSGROUPS};
 //KWP_MODULE airbag = {"AIRBAG", ADR_Airbag, airbagGroups, NAIRBAGGROUPS};
 
 //define modules
-KWP_MODULE *modules[NMODULES] = { &engine, &dashboard };// &_abs, &airbag};
+KWP_MODULE *modules[NMODULES] = { &engine, &dashboard, &absunit };// &_abs, &airbag};
 KWP_MODULE *currentModule = modules[0];
 
 VW2002FISWriter fisWriter(FIS_CLK, FIS_DATA, FIS_ENA);
-GetBootMessage getBootMessage;
-//GetButtonClick stalkPushUpButton(stalkPushUp, LOW, CLICKBTN_PULLUP);
-//GetButtonClick stalkPushDownButton(stalkPushDown, LOW, CLICKBTN_PULLUP);
-//GetButtonClick stalkPushResetButton(stalkPushReset, LOW, CLICKBTN_PULLUP);
+
+#ifdef bootmsg
+  GetBootMessage getBootMessage;
+#endif
 
 bool ignitionState = false;         // variable for reading the ignition pin status
 bool ignitionStateRunOnce = false;  // variable for reading the first run loop
@@ -146,29 +140,12 @@ void setup()
 
   long current_millis = (long)millis();
   long lastRefreshTime = current_millis;
-
-  //define digital button stuff
-/*  stalkPushUpButton.debounceTime   = 20;   // Debounce timer in ms
-  stalkPushUpButton.multiclickTime = 350;  // Time limit for multi clicks
-  stalkPushUpButton.longClickTime  = 2500; // time until "held-down clicks" register
-
-  stalkPushDownButton.debounceTime   = 20;   // Debounce timer in ms
-  stalkPushDownButton.multiclickTime = 350;  // Time limit for multi clicks
-  stalkPushDownButton.longClickTime  = 2500; // time until "held-down clicks" register
-
-  stalkPushResetButton.debounceTime   = 20;   // Debounce timer in ms
-  stalkPushResetButton.multiclickTime = 350;  // Time limit for multi clicks
-  stalkPushResetButton.longClickTime  = 2500; // time until "held-down clicks" register */
 }
 
 void loop()
 {
   //Check to see the current state of the digital pins (monitor voltage for ign, stalk press)
  // ignitionState = digitalRead(ignitionMonitorPin);
-  
-/*  stalkPushDownButton.Update();
-  stalkPushUpButton.Update();
-  stalkPushResetButton.Update(); */
 
   //refresh the current "current_millis" (for refresh rate!)
   long current_millis = (long)millis();
@@ -210,10 +187,13 @@ void loop()
   if (ignitionState == HIGH && !ignitionStateRunOnce) //&& !fisBeenToggled)
   {
     // Serial.println("Return & Display Boot Message");
-    getBootMessage.returnBootMessage();         //find out the boot message
-    //getBootMessage.displayBootImage();        //display the boot message
-    getBootMessage.displayBootMessage();    //TODO: build graph support!
-
+    #ifdef bootmsg
+      getBootMessage.returnBootMessage();         //find out the boot message
+        #ifdef bootimg
+          getBootMessage.displayBootImage();        //display the boot message
+        #endif
+      getBootMessage.displayBootMessage();    //TODO: build graph support!
+    #endif
     ignitionStateRunOnce = true;            //set it's been ran, to stop redisplay of welcome message until ign. off.
   }
 
