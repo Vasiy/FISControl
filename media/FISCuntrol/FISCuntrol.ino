@@ -1,20 +1,15 @@
-//Include FIS Writer and KWP
+//Include FIS Writer, TimeLib and KWP
 #include "VW2002FISWriter.h"
 #include "KWP.h"
 #include "GetBootMessage.h"
-#include "AnalogMultiButton.h" // https://github.com/dxinteractive/AnalogMultiButton
+#include "GetButtonClick.h"
 
-// KWP 
-#define pinKLineRX 5
-#define pinKLineTX 4
+// KWP.  RX = Pin 2, TX = Pin 3
+#define pinKLineRX 12
+#define pinKLineTX 13
 KWP kwp(pinKLineRX, pinKLineTX);
 
-// CDC
-const byte dinCDC = 6;
-const byte doutCDC = 7;
-const byte clkCDC = 8;
-
-/*#define stalkPushUp 24             // input stalk UP
+#define stalkPushUp 24             // input stalk UP
 #define stalkPushDown 23           // input stalk DOWN
 #define stalkPushReset 22          // input stalk RESET
 
@@ -22,34 +17,30 @@ const byte clkCDC = 8;
 #define stalkPushDownMonitor 23           // input stalk DOWN (to monitor when FIS Disabled)
 #define stalkPushResetMonitor 22          // input stalk RESET (to monitor when FIS Disabled)
 
-#define stalkPushUpReturn 30        // if FIS disable - use this to match stalk UP
-#define stalkPushDownReturn 31      // if FIS disable - use this to match stalk DOWN
-#define stalkPushResetReturn 32     // if FIS disable - use this to match stalk RESET
-*/
-//Buttons
-#define btn1PIN A3
-#define btn2PIN A2
-const uint8_t BUTTONS_TOTAL = 2; // 2 button on each button pin
-const unsigned int BUTTONS_VALUES[BUTTONS_TOTAL] = {30, 123}; // btn value
-AnalogMultiButton btn1(btn1PIN, BUTTONS_TOTAL, BUTTONS_VALUES); // make an AnalogMultiButton object, pass in the pin, total and values array
-const uint8_t btn_NAV = 30;
-const uint8_t btn_RETURN=123;
-AnalogMultiButton btn2(btn2PIN, BUTTONS_TOTAL, BUTTONS_VALUES);
-const uint8_t btn_INFO = 30;
-const uint8_t btn_CARS = 123; 
+#define stalkPushUpReturn 30       // if FIS disable - use this to match stalk UP
+#define stalkPushDownReturn 31    // if FIS disable - use this to match stalk DOWN
+#define stalkPushResetReturn 32
+// if F`IS disable - use this to match stalk RESET
+
+//Define ignition live sense as Pin 7
+#define ignitionMonitorPin 10
 
 // FIS
-const uint8_t FIS_CLK = 15;  // 
-const uint8_t FIS_DATA = 14; // 
-const uint8_t FIS_ENA = 16;   // 
+//#define FIS_CLK 13  // - Arduino 13 - PB5
+//#define FIS_DATA 11 // - Arduino 11 - PB3
+//#define FIS_ENA 8 // - Arduino 8 - PB0
 
-// KWP connection settings
-const int NENGINEGROUPS = 20;
-const int NDASHBOARDGROUPS = 1;
-const int NABSGROUPS = 1;
-const int NAIRBAGGROUPS = 1;
-const int MAX_CONNECT_RETRIES = 5;
-const int NMODULES = 2;
+#define FIS_CLK 52  // - Arduino 13 - PB5
+#define FIS_DATA 51 // - Arduino 11 - PB3
+#define FIS_ENA 53   // - Arduino 8 - PB0
+
+//Define MAX Retries2
+#define NENGINEGROUPS 20
+#define NDASHBOARDGROUPS 1
+#define NABSGROUPS 1
+#define NAIRBAGGROUPS 1
+
+#define NMODULES 2
 
 //define engine groups
 //**********************************0, 1,2, 3, 4, 5, 6,   7,  8,  9,  10, 11, 12, 13, 14, 15, 16,  17,  18,  19)
@@ -71,9 +62,9 @@ KWP_MODULE *currentModule = modules[0];
 
 VW2002FISWriter fisWriter(FIS_CLK, FIS_DATA, FIS_ENA);
 GetBootMessage getBootMessage;
-//GetButtonClick stalkPushUpButton(stalkPushUp, LOW, CLICKBTN_PULLUP);
-//GetButtonClick stalkPushDownButton(stalkPushDown, LOW, CLICKBTN_PULLUP);
-//GetButtonClick stalkPushResetButton(stalkPushReset, LOW, CLICKBTN_PULLUP);
+GetButtonClick stalkPushUpButton(stalkPushUp, LOW, CLICKBTN_PULLUP);
+GetButtonClick stalkPushDownButton(stalkPushDown, LOW, CLICKBTN_PULLUP);
+GetButtonClick stalkPushResetButton(stalkPushReset, LOW, CLICKBTN_PULLUP);
 
 bool ignitionState = false;         // variable for reading the ignition pin status
 bool ignitionStateRunOnce = false;  // variable for reading the first run loop
@@ -107,27 +98,12 @@ int refreshTime = 50;              // time for refresh in ms.  100 works.  250 w
 byte delayTime = 5;
 int startTime = 10000;            // start up time = 1 minute
 
-byte keyStatus;                   // current key status (see below)
-
-//****************************************//
-
-int getKeyStatus() {
-  btn1.update();
-  btn2.update();
-  if ( btn1.isPressedAfter(btn_NAV,2000) ) return 4;  // disable screen after holding more than 2 sec
-  if ( btn1.isPressed(btn_RETURN) ) return 1;         // return and cars switch between modules
-  if ( btn1.isPressedAfter(btn_RETURN,2000) ) return 11;         // return and cars switch between modules
-  if ( btn2.isPressed(btn_CARS) ) return 2;
-  if ( btn2.isPressedAfter(btn_CARS,2000) ) return 21;
-  if ( btn2.isPressed(btn_INFO) ) return 3;           // switch between groups
-  else return 0;
-}
-
 void setup()
 {
   //Initialise basic varaibles
- // Serial.begin(115200);
-  //pinMode(stalkPushUpReturn, OUTPUT); pinMode(stalkPushDownReturn, OUTPUT); pinMode(stalkPushResetReturn, OUTPUT);
+  Serial.begin(115200);
+  pinMode(ignitionMonitorPin, INPUT);
+  pinMode(stalkPushUpReturn, OUTPUT); pinMode(stalkPushDownReturn, OUTPUT); pinMode(stalkPushResetReturn, OUTPUT);
 
   //Cleanup, even remove last drawn object if not already/disconnect from module too.
   ignitionStateRunOnce = false;
@@ -142,13 +118,12 @@ void setup()
   fetchedData = false;
   kwp.disconnect();
   fisWriter.remove_graphic();
-  ignitionState = HIGH;
 
   long current_millis = (long)millis();
   long lastRefreshTime = current_millis;
 
-  //define digital button stuff
-/*  stalkPushUpButton.debounceTime   = 20;   // Debounce timer in ms
+  //define button stuff
+  stalkPushUpButton.debounceTime   = 20;   // Debounce timer in ms
   stalkPushUpButton.multiclickTime = 350;  // Time limit for multi clicks
   stalkPushUpButton.longClickTime  = 2500; // time until "held-down clicks" register
 
@@ -158,25 +133,23 @@ void setup()
 
   stalkPushResetButton.debounceTime   = 20;   // Debounce timer in ms
   stalkPushResetButton.multiclickTime = 350;  // Time limit for multi clicks
-  stalkPushResetButton.longClickTime  = 2500; // time until "held-down clicks" register */
+  stalkPushResetButton.longClickTime  = 2500; // time until "held-down clicks" register
 }
 
 void loop()
 {
   //Check to see the current state of the digital pins (monitor voltage for ign, stalk press)
- // ignitionState = digitalRead(ignitionMonitorPin);
-  
-/*  stalkPushDownButton.Update();
+  ignitionState = digitalRead(ignitionMonitorPin);
+  stalkPushDownButton.Update();
   stalkPushUpButton.Update();
-  stalkPushResetButton.Update(); */
+  stalkPushResetButton.Update();
 
   //refresh the current "current_millis" (for refresh rate!)
   long current_millis = (long)millis();
 
   //update the Reset button (see if it's been clicked more than 2 times (there 3+)
   //if it has, toggle fisDisable to turn off/on the screen
-  keyStatus = getKeyStatus(); // if NAV (disable) pressed for 2 sec - disable screen and disconnect KWP
-  if (keyStatus == 4)
+  if (stalkPushResetButton.clicks == -1)
   {
     fisDisable = !fisDisable;   //flip-flop disDisable
 
@@ -209,10 +182,10 @@ void loop()
   //If the ignition is currently "on" then work out the message
   if (ignitionState == HIGH && !ignitionStateRunOnce) //&& !fisBeenToggled)
   {
-    // Serial.println("Return & Display Boot Message");
-    getBootMessage.returnBootMessage();         //find out the boot message
-    //getBootMessage.displayBootImage();        //display the boot message
-    getBootMessage.displayBootMessage();    //TODO: build graph support!
+    Serial.println("Return & Display Boot Message");
+    getBootMessage.returnBootMsg();         //find out the boot message
+    getBootMessage.displayBootMsg();        //display the boot message
+    //getBootMessage.displayBootImage();    //TODO: build graph support!
 
     ignitionStateRunOnce = true;            //set it's been ran, to stop redisplay of welcome message until ign. off.
   }
@@ -220,7 +193,7 @@ void loop()
   //if the screen isn't disabled, carry on
   if (!fisDisable && ignitionState == HIGH)
   {
-    if (ignitionState == 3)   //see if the down button has been pressed.  If it's been held, it will return -1
+    if (stalkPushDownButton.clicks == -1)   //see if the down button has been pressed.  If it's been held, it will return -1
     {
       //if the down button has been held, prepare to swap groups!
       //use return; to get the loop to refresh (pointers need refreshing!)
@@ -251,7 +224,7 @@ void loop()
     }
 
     //if the previous module causes a rollover, start again
-    if (keyStatus == 3 ) // if info pressed -> switch module in the current group
+    if (stalkPushDownButton.clicks > 0)
     {
       if ((currentGroup + 1) > (NENGINEGROUPS - 1))
       {
@@ -272,8 +245,8 @@ void loop()
       }
     }
 
-    //check to see if "RETURN" is held.  If it is, toggle "isCustom"
-    if ( keyStatus == 11 )
+    //check to see if "up" is held.  If it is, toggle "isCustom"
+    if (stalkPushUpButton.clicks == -1)
     {
       isCustom = !isCustom; //toggle isCustom
       if (isCustom == true)
@@ -292,10 +265,9 @@ void loop()
       return;
     }
 
-    // switch group if btn_CARS is pressed
-    if (keyStatus == 2) 
+    if (stalkPushUpButton.clicks > 0)
     {
-      if ( keyStatus == 2 && (currentGroup - 1) < 0)
+      if ((currentGroup - 1) < 0)
       {
         currentGroup = NENGINEGROUPS - 1;
         fisLine1 = ""; fisLine2 = ""; fisLine3 = ""; fisLine4 = ""; fisLine5 = ""; fisLine6 = ""; fisLine7 = ""; fisLine8 = ""; //empty the lines from previous
@@ -494,56 +466,57 @@ void loop()
     fisWriter.remove_graphic();
 
     //Force HIGH on all the return pins
-    // // Serial.println("Disabled.  Force pins HIGH");
-    //digitalWrite(stalkPushUpReturn, HIGH);
-    //digitalWrite(stalkPushDownReturn, HIGH);
-    //digitalWrite(stalkPushResetReturn, HIGH);
+    Serial.println("Disabled.  Force pins HIGH");
+    digitalWrite(stalkPushUpReturn, HIGH);
+    digitalWrite(stalkPushDownReturn, HIGH);
+    digitalWrite(stalkPushResetReturn, HIGH);
 
-    //if the Pins are held LOW (therefore, false), hold the corresponding pin LOW, too. - transfer stalk button to dashboard
-    /*if (!digitalRead(stalkPushDownMonitor))
+    //if the Pins are held LOW (therefore, false), hold the corresponding pin LOW, too.
+    if (!digitalRead(stalkPushDownMonitor))
     {
-      // // Serial.println("Disabled.  Force Down LOW");
+      Serial.println("Disabled.  Force Down LOW");
       for (int i = 0; i <= 1500; i++) {
         if (digitalRead(stalkPushDownMonitor)) {
           i = 1700;
         }
         else {
-          // // Serial.println("Down LOW");
+          Serial.println("Down LOW");
           digitalWrite(stalkPushDownReturn, LOW);
         }
         delay(1);
       }
     }
 
-   if (!digitalRead(stalkPushUpMonitor))
+    if (!digitalRead(stalkPushUpMonitor))
     {
-      // // Serial.println("Disabled.  Force Up LOW");
+      Serial.println("Disabled.  Force Up LOW");
       for (int i = 0; i <= 1500; i++) {
         if (digitalRead(stalkPushUpMonitor)) {
           i = 1700;
         }
         else {
-          // // Serial.println("Up LOW");
+          Serial.println("Up LOW");
           digitalWrite(stalkPushUpReturn, LOW);
         }
         delay(1);
       }
     }
 
-   if (!digitalRead(stalkPushResetMonitor))
+    if (!digitalRead(stalkPushResetMonitor))
     {
-      // // Serial.println("Disabled.  Force Reset LOW");
+      Serial.println("Disabled.  Force Reset LOW");
       //read the reset pin.  If it's held for more than 1700 ms, jump
       for (int i = 0; i <= 1500; i++) {
         if (digitalRead(stalkPushResetMonitor)) {
           i = 1700;
         }
         else {
-          // // Serial.println("Reset LOW");
+          Serial.println("Reset LOW");
           digitalWrite(stalkPushResetReturn, LOW);
         }
         delay(1);
       }
-    }*/
+    }
   }
 }
+

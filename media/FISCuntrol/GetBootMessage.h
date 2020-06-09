@@ -13,14 +13,17 @@ extern String GreetingMessage7;
 extern String GreetingMessage8;
 
 extern class VW2002FISWriter fisWriter;
+extern class RTC_DS1307 rtc_time;
+extern class RTC_Millis rtc;
 
 class GetBootMessage
 {
   public:
-    void returnBootMessage();
-    void displayBootMessage();
-    //void displayBootImage();
+    void returnBootMsg();
+    void displayBootMsg();
+    void displayBootImage();
   private:
 
 };
 #endif
+

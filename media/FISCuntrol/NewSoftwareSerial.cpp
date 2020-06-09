@@ -32,9 +32,9 @@ http://arduiniana.org.
 // When set, _DEBUG co-opts pins 11 and 13 for debugging with an
 // oscilloscope or logic analyzer.  Beware: it also slightly modifies
 // the bit times, so don't rely on it too much at high baud rates
-/*#define _DEBUG 0
+#define _DEBUG 0
 #define _DEBUG_PIN1 11
-#define _DEBUG_PIN2 13 */
+#define _DEBUG_PIN2 13
 // 
 // Includes
 // 
@@ -143,7 +143,7 @@ volatile uint8_t NewSoftwareSerial::_receive_buffer_head = 0;
 //
 // This function generates a brief pulse
 // for debugging or measuring on an oscilloscope.
-/*inline void DebugPulse(uint8_t pin, uint8_t count)
+inline void DebugPulse(uint8_t pin, uint8_t count)
 {
 #if _DEBUG
   volatile uint8_t *pport = portOutputRegister(digitalPinToPort(pin));
@@ -155,7 +155,7 @@ volatile uint8_t NewSoftwareSerial::_receive_buffer_head = 0;
     *pport = val;
   }
 #endif
-}*/
+}
 
 //
 // Private methods
@@ -223,13 +223,13 @@ void NewSoftwareSerial::recv()
   {
     // Wait approximately 1/2 of a bit width to "center" the sample
     tunedDelay(_rx_delay_centering);
-//    DebugPulse(_DEBUG_PIN2, 1);
+    DebugPulse(_DEBUG_PIN2, 1);
 
     // Read each of the 8 bits
     for (uint8_t i=0x1; i; i <<= 1)
     {
       tunedDelay(_rx_delay_intrabit);
-//      DebugPulse(_DEBUG_PIN2, 1);
+      DebugPulse(_DEBUG_PIN2, 1);
       uint8_t noti = ~i;
       if (rx_pin_read())
         d |= i;
@@ -239,7 +239,7 @@ void NewSoftwareSerial::recv()
 
     // skip the stop bit
     tunedDelay(_rx_delay_stopbit);
-//    DebugPulse(_DEBUG_PIN2, 1);
+    DebugPulse(_DEBUG_PIN2, 1);
 
     if (_inverse_logic)
       d = ~d;
@@ -253,9 +253,9 @@ void NewSoftwareSerial::recv()
     } 
     else 
     {
-/*#if _DEBUG // for scope: pulse pin as overflow indictator
+#if _DEBUG // for scope: pulse pin as overflow indictator
       DebugPulse(_DEBUG_PIN1, 1);
-#endif*/
+#endif
       _buffer_overflow = true;
     }
   }
@@ -393,7 +393,7 @@ void NewSoftwareSerial::begin(long speed)
       break;
     }
   }
-  ////// Serial.println(_rx_delay_stopbit);
+  ////Serial.println(_rx_delay_stopbit);
 
   // Set up RX interrupts, but only if we have a valid RX baud rate
   if (_rx_delay_stopbit)
@@ -406,10 +406,10 @@ void NewSoftwareSerial::begin(long speed)
     tunedDelay(_tx_delay); // if we were low this establishes the end
   }
 
-/*#if _DEBUG
+#if _DEBUG
   pinMode(_DEBUG_PIN1, OUTPUT);
   pinMode(_DEBUG_PIN2, OUTPUT);
-#endif*/
+#endif
 
   listen();
 }
@@ -518,3 +518,5 @@ int NewSoftwareSerial::peek()
   // Read from "head"
   return _receive_buffer[_receive_buffer_head];
 }
+
+
