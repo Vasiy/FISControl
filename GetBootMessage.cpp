@@ -1,12 +1,12 @@
 #include "GetBootMessage.h"
 #include "VW2002FISWriter.h"
 #include "Wire.h"
-//#include "VWbitmaps.h"
+#include "VWbitmaps.h"
 
 void GetBootMessage::returnBootMessage()
 {
   GreetingMessage3 = "WELCOME";
-  GreetingMessage4 = "ONBOARD!";
+  GreetingMessage4 = "ONBOARD";
 }
 
 void GetBootMessage::displayBootMessage()
@@ -28,7 +28,7 @@ void GetBootMessage::displayBootMessage()
   delay(3500);
 }
 
-/*void GetBootMessage::displayBootImage()
+void GetBootMessage::displayBootImage()
 {
   //Init the display and clear the screen
   fisWriter.FIS_init();
@@ -38,6 +38,6 @@ void GetBootMessage::displayBootMessage()
 
   //Display the greeting.  40/48 is the height.
   fisWriter.GraphicFromArray(0, 0, 64, 65, avant, 1);
-  //fisWriter.GraphicFromArray(0, 70, 64, 16, , 1);
+  fisWriter.GraphicFromArray(0, 70, 64, 16, QBSW, 1);
   delay(3500); 
-}*/
+}

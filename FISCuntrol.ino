@@ -3,11 +3,11 @@
 #include "KWP.h"
 #include "AnalogMultiButton.h" // https://github.com/dxinteractive/AnalogMultiButton
 /* uncomment to enable boot message and boot image. Removed due excessive memory consumption */
-  //#define bootmsg show
-  //#define bootimg show
-
-#ifdef bootmsg
+#define Atmega32u4
+#ifndef Atmega32u4 
   #include "GetBootMessage.h"
+  #define bootmsg
+  #define bootimg
 #endif
 
 // KWP 
@@ -67,6 +67,9 @@ VW2002FISWriter fisWriter(FIS_CLK, FIS_DATA, FIS_ENA);
 
 #ifdef bootmsg
   GetBootMessage getBootMessage;
+ // #ifdef bootimg
+ //   GetBootImage getBootImage;
+ // #endif
 #endif
 
 bool ignitionState = false;         // variable for reading the ignition pin status

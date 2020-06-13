@@ -19,7 +19,7 @@ class GetBootMessage
   public:
     void returnBootMessage();
     void displayBootMessage();
-    //void displayBootImage();
+    void displayBootImage();
   private:
 
 };
