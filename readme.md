@@ -1,15 +1,16 @@
-## Welcome to FISCuntrol ##
+## Welcome to FISControl ##
 
-**FISCuntrol** is an custom FIS display for Volkswagens.  By combining an FT232RL KKL cable, an Ardinuo Uno and an RTC (the **DS1307**), the stock cluster can be used to display information.  Just like VCDS, FISCuntrol uses the KWP1281 protocol and is able to login to specific modules within the car and retrieve useful measuring blocks.
+**FISCuntrol** is an custom FIS display for old VAG dashboards.  By combining an FT232RL KKL cable, an Ardinuo Uno/Leonardo/esp32, the stock cluster can be used to display information.  Just like VCDS, FISCuntrol uses the KWP1281 protocol and is able to login to specific modules within the car and retrieve useful measuring blocks.
 
-Sticking with the OEM look, the module is designed to be incorporated into the original cluster and stalk for ease of use.  Therefore, the keys for interaction are:
+Sticking with the OEM look, the module is designed to be incorporated into the original cluster and NAVI buttons near a handbrake handle for ease of use.  Therefore, the keys for interaction are:
 
-- Reset
-- Up
-- Down
+- NAVI   : hold for disable
+- RETURN : hold for custom screen (TBD)
+- CARS   : switch between ECU
+- INFO   : switch between groups in selected module
 
 ### Features:  ###
-- Personalised welcome message 
+- Personalised welcome message and image (should be disabled for Atmega32u4 boards)
 - RPM
 - Load
 - MAF Reading
@@ -22,7 +23,6 @@ Sticking with the OEM look, the module is designed to be incorporated into the o
 
 - Fault Code retrieval
 - User defined variables
-- Boot logo
 
 ### Contribute: ###
 Currently, the source code is being revised by Adam Forbes.  Comments and suggestions are more than welcome.  In fact, they would be appreciated.  I have built this for me, but I'd to hear what you would like to see in it.
@@ -30,10 +30,10 @@ Currently, the source code is being revised by Adam Forbes.  Comments and sugges
 If you'd like to buy me a beer or donate to the cause, my PayPal is:
 
 **[adamforbes@hotmail.com](adamforbes@hotmail.com)** **[facebook.com/adamforbes92](facebook.com/adamforbes92)**
+also you can contribute to me, because Adam's project seems holded for past 2 years, that why I started my own modifications
 
 ### What is supported? ###
 - Custom greeting (Good morning, good afternoon, good evening)
-- Special dates (Birthday, Christmas, New Year)
 - KWP1281 protocol
 - Measuring block reading
 - Disable with three medium presses on Reset key on the stalk
