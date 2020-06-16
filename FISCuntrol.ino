@@ -33,8 +33,8 @@ const uint8_t btn_INFO = 30;
 const uint8_t btn_CARS = 123; 
 
 // FIS
-const uint8_t FIS_CLK = 15;  // 
-const uint8_t FIS_DATA = 14; // 
+const uint8_t FIS_CLK = 14;  // 
+const uint8_t FIS_DATA = 10; // 
 const uint8_t FIS_ENA = 16;   // 
 
 // KWP connection settings
