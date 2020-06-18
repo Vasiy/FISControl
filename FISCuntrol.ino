@@ -3,7 +3,9 @@
 #include "KWP.h"
 #include "AnalogMultiButton.h" // https://github.com/dxinteractive/AnalogMultiButton
 /* uncomment to enable boot message and boot image. Removed due excessive memory consumption */
-#define Atmega32u4
+//#define Atmega32u4    // limited memory - welcome message and graphics disabled
+#define Atmega328
+
 #ifndef Atmega32u4 
   #include "GetBootMessage.h"
   #define bootmsg
@@ -11,8 +13,14 @@
 #endif
 
 // KWP 
-#define pinKLineRX 5
-#define pinKLineTX 4
+#ifdef Atmega32u4 
+  const uint8_t pinKLineRX = 5;
+  const uint8_t pinKLineTX = 4;
+#endif
+#ifdef Atmega328
+  const uint8_t pinKLineRX = 2;
+  const uint8_t pinKLineTX = 3;
+#endif
 KWP kwp(pinKLineRX, pinKLineTX);
 
 // CDC
@@ -21,8 +29,15 @@ const byte doutCDC = 7;
 const byte clkCDC = 8; */
 
 //Buttons
-#define btn1PIN A3
-#define btn2PIN A2
+#ifdef Atmega32u4 
+  #define btn1PIN A3
+  #define btn2PIN A2
+#endif
+#ifdef Atmega328
+  #define btn1PIN A0
+  #define btn2PIN A1
+#endif
+  
 const uint8_t BUTTONS_TOTAL = 2; // 2 button on each button pin
 const unsigned int BUTTONS_VALUES[BUTTONS_TOTAL] = {30, 123}; // btn value
 AnalogMultiButton btn1(btn1PIN, BUTTONS_TOTAL, BUTTONS_VALUES); // make an AnalogMultiButton object, pass in the pin, total and values array
@@ -33,9 +48,16 @@ const uint8_t btn_INFO = 30;
 const uint8_t btn_CARS = 123; 
 
 // FIS
-const uint8_t FIS_CLK = 14;  // 
-const uint8_t FIS_DATA = 10; // 
-const uint8_t FIS_ENA = 16;   // 
+#ifdef Atmega32u4
+  const uint8_t FIS_CLK = 14; 
+  const uint8_t FIS_DATA = 10; 
+  const uint8_t FIS_ENA = 16;
+#endif
+#ifdef Atmega328
+  const uint8_t FIS_CLK = 4;
+  const uint8_t FIS_DATA = 5; 
+  const uint8_t FIS_ENA = 6; 
+#endif  
 
 // KWP connection settings
 const int NENGINEGROUPS = 20;
@@ -123,9 +145,30 @@ int getKeyStatus() {
 void setup()
 {
   //Initialise basic varaibles
- // Serial.begin(115200);
-  //pinMode(stalkPushUpReturn, OUTPUT); pinMode(stalkPushDownReturn, OUTPUT); pinMode(stalkPushResetReturn, OUTPUT);
-
+/*Serial.begin(9600);
+Serial.print('KWP: rx=');Serial.print(pinKLineRX);Serial.print(' , tx=');Serial.println(pinKLineTX);
+Serial.print('Buttons: line1= ');Serial.print(btn1PIN);Serial.print(' , line2= ');Serial.println(btn2PIN);
+Serial.print('FIS: clock= ');Serial.print(FIS_CLK);Serial.print(' , data= ');Serial.print(FIS_DATA);Serial.print(' , enable= ');Serial.println(FIS_ENA);Serial.print('KWP: rx=');Serial.print(pinKLineRX);Serial.print(' , tx=');Serial.println(pinKLineTX);
+Serial.print('Buttons: line1= ');Serial.print(btn1PIN);Serial.print(' , line2= ');Serial.println(btn2PIN);
+Serial.print('FIS: clock= ');Serial.print(FIS_CLK);Serial.print(' , data= ');Serial.print(FIS_DATA);Serial.print(' , enable= ');Serial.println(FIS_ENA);*/
+  //pinMode(btPlay, OUTPUT); 
+  //pinMode(btNext, OUTPUT); 
+  //pinMode(btPrev, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  if (FIS_CLK == 4 && pinKLineRX == 2) { // Atmega328
+    digitalWrite(LED_BUILTIN, HIGH);   
+    delay(1000);                       
+    digitalWrite(LED_BUILTIN, LOW);    
+  } 
+  if (FIS_CLK == 5 && pinKLineRX == 14) { // Atmega32u4
+    digitalWrite(LED_BUILTIN, HIGH);   
+    delay(250);                       
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(250);                       
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(250);
+    digitalWrite(LED_BUILTIN, LOW);    
+  }
   //Cleanup, even remove last drawn object if not already/disconnect from module too.
   ignitionStateRunOnce = false;
   maxAttemptsCountModule = 1;
@@ -143,6 +186,7 @@ void setup()
 
   long current_millis = (long)millis();
   long lastRefreshTime = current_millis;
+
 }
 
 void loop()
