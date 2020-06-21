@@ -1,3 +1,4 @@
+#include <Arduino.h>
 //Include FIS Writer and KWP
 #include "VW2002FISWriter.h"
 #include "KWP.h"
@@ -145,8 +146,8 @@ int getKeyStatus() {
 void setup()
 {
   //Initialise basic varaibles
-/*Serial.begin(9600);
-Serial.print('KWP: rx=');Serial.print(pinKLineRX);Serial.print(' , tx=');Serial.println(pinKLineTX);
+Serial.begin(9600);
+/*Serial.print('KWP: rx=');Serial.print(pinKLineRX);Serial.print(' , tx=');Serial.println(pinKLineTX);
 Serial.print('Buttons: line1= ');Serial.print(btn1PIN);Serial.print(' , line2= ');Serial.println(btn2PIN);
 Serial.print('FIS: clock= ');Serial.print(FIS_CLK);Serial.print(' , data= ');Serial.print(FIS_DATA);Serial.print(' , enable= ');Serial.println(FIS_ENA);Serial.print('KWP: rx=');Serial.print(pinKLineRX);Serial.print(' , tx=');Serial.println(pinKLineTX);
 Serial.print('Buttons: line1= ');Serial.print(btn1PIN);Serial.print(' , line2= ');Serial.println(btn2PIN);
@@ -200,6 +201,7 @@ void loop()
   //update the Reset button (see if it's been clicked more than 2 times (there 3+)
   //if it has, toggle fisDisable to turn off/on the screen
   keyStatus = getKeyStatus(); // if NAV (disable) pressed for 2 sec - disable screen and disconnect KWP
+  Serial.println(keyStatus);
   if (keyStatus == 4)
   {
     fisDisable = !fisDisable;   //flip-flop disDisable
