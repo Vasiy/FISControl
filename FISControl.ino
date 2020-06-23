@@ -2,14 +2,20 @@
 #include "VW2002FISWriter.h"
 #include "KWP.h"
 #include "AnalogMultiButton.h" // https://github.com/dxinteractive/AnalogMultiButton
+
+
 /* uncomment to enable boot message and boot image. Removed due excessive memory consumption */
 //#define Atmega32u4    // limited memory - welcome message and graphics disabled
 #define Atmega328
 
 #ifndef Atmega32u4 
   #include "GetBootMessage.h"
-  #define bootmsg
-  #define bootimg
+    #define bootmsg
+    #define bootimg
+  #ifndef Atmega328
+    #include "U8g2lib.h"  
+      U8G2_SSD1306_128X64_NONAME_1_3W_SW_SPI u8g2(U8G2_R0, /* clock=*/ 13, /* data=*/ 11, /* cs=*/ 10, /* reset=*/ 8);
+  #endif
 #endif
 
 // KWP 
@@ -18,8 +24,8 @@
   const uint8_t pinKLineTX = 4;
 #endif
 #ifdef Atmega328
-  const uint8_t pinKLineRX = 2;
-  const uint8_t pinKLineTX = 3;
+  const uint8_t pinKLineRX = 3;
+  const uint8_t pinKLineTX = 2;
 #endif
 KWP kwp(pinKLineRX, pinKLineTX);
 
@@ -60,8 +66,8 @@ const uint8_t btn_CARS = 123;
 #endif  
 
 // KWP connection settings
-const int NENGINEGROUPS = 20;
-const int NDASHBOARDGROUPS = 1;
+const int NENGINEGROUPS = 7; //20;
+const int NDASHBOARDGROUPS = 3;
 const int NABSGROUPS = 1;
 const int NAIRBAGGROUPS = 1;
 const int MAX_CONNECT_RETRIES = 5;
@@ -70,8 +76,8 @@ const int NMODULES = 3;
 //define engine groups
 //**********************************0, 1,2, 3, 4, 5, 6,   7,  8,  9,  10, 11, 12, 13, 14, 15, 16,  17,  18,  19)
 //Block 3, 5 don't work?
-int engineGroups[NENGINEGROUPS] = {2, 3, 4, 5, 6, 10, 11, 14, 15, 16, 20, 31, 32, 90, 91, 92, 113, 114, 115, 118};   //defined blocks to read
-int dashboardGroups[NDASHBOARDGROUPS] = {2};                    //dashboard groups to read
+int engineGroups[NENGINEGROUPS] = { 6, 101, 102, 115, 116, 117, 120 }; //2, 3, 4, 5, 6, 10, 11, 14, 15, 16, 20, 31, 32, 90, 91, 92, 113, 114, 115, 118};   //defined blocks to read
+int dashboardGroups[NDASHBOARDGROUPS] = { 1, 2, 3};                    //dashboard groups to read
 int absGroups[NDASHBOARDGROUPS] = { 1 };                          //abs groups to read
 //int airbagGroups[NDASHBOARDGROUPS] = { 1 };                       //airbag groups to read
 
@@ -144,31 +150,18 @@ int getKeyStatus() {
 
 void setup()
 {
+  Serial.begin(9600);
+  #ifndef Atmega328 || Atmega32u4
+    u8g2.begin(); 
+    // flip screen, if required
+    // u8g.setRot180();
+    u8g2.setFont(u8g2_font_ncenB10_tr);
+  #endif
   //Initialise basic varaibles
-/*Serial.begin(9600);
-Serial.print('KWP: rx=');Serial.print(pinKLineRX);Serial.print(' , tx=');Serial.println(pinKLineTX);
-Serial.print('Buttons: line1= ');Serial.print(btn1PIN);Serial.print(' , line2= ');Serial.println(btn2PIN);
-Serial.print('FIS: clock= ');Serial.print(FIS_CLK);Serial.print(' , data= ');Serial.print(FIS_DATA);Serial.print(' , enable= ');Serial.println(FIS_ENA);Serial.print('KWP: rx=');Serial.print(pinKLineRX);Serial.print(' , tx=');Serial.println(pinKLineTX);
-Serial.print('Buttons: line1= ');Serial.print(btn1PIN);Serial.print(' , line2= ');Serial.println(btn2PIN);
-Serial.print('FIS: clock= ');Serial.print(FIS_CLK);Serial.print(' , data= ');Serial.print(FIS_DATA);Serial.print(' , enable= ');Serial.println(FIS_ENA);*/
   //pinMode(btPlay, OUTPUT); 
   //pinMode(btNext, OUTPUT); 
   //pinMode(btPrev, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  if (FIS_CLK == 4 && pinKLineRX == 2) { // Atmega328
-    digitalWrite(LED_BUILTIN, HIGH);   
-    delay(1000);                       
-    digitalWrite(LED_BUILTIN, LOW);    
-  } 
-  if (FIS_CLK == 5 && pinKLineRX == 14) { // Atmega32u4
-    digitalWrite(LED_BUILTIN, HIGH);   
-    delay(250);                       
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(250);                       
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(250);
-    digitalWrite(LED_BUILTIN, LOW);    
-  }
   //Cleanup, even remove last drawn object if not already/disconnect from module too.
   ignitionStateRunOnce = false;
   maxAttemptsCountModule = 1;
@@ -200,7 +193,7 @@ void loop()
   //update the Reset button (see if it's been clicked more than 2 times (there 3+)
   //if it has, toggle fisDisable to turn off/on the screen
   keyStatus = getKeyStatus(); // if NAV (disable) pressed for 2 sec - disable screen and disconnect KWP
-  if (keyStatus == 4)
+  if (keyStatus == 11)
   {
     fisDisable = !fisDisable;   //flip-flop disDisable
 
@@ -247,7 +240,7 @@ void loop()
   //if the screen isn't disabled, carry on
   if (!fisDisable && ignitionState == HIGH)
   {
-    if (ignitionState == 3)   //see if the down button has been pressed.  If it's been held, it will return -1
+    if (keyStatus == 31)   //see if the down button has been pressed.  If it's been held, it will return -1
     {
       //if the down button has been held, prepare to swap groups!
       //use return; to get the loop to refresh (pointers need refreshing!)
@@ -300,7 +293,7 @@ void loop()
     }
 
     //check to see if "RETURN" is held.  If it is, toggle "isCustom"
-    if ( keyStatus == 11 )
+    if ( keyStatus == 21 )
     {
       isCustom = !isCustom; //toggle isCustom
       if (isCustom == true)
@@ -320,9 +313,9 @@ void loop()
     }
 
     // switch group if btn_CARS is pressed
-    if (keyStatus == 2) 
+    if (keyStatus == 4) 
     {
-      if ( keyStatus == 2 && (currentGroup - 1) < 0)
+      if ( keyStatus == 4 && (currentGroup - 1) < 0)
       {
         currentGroup = NENGINEGROUPS - 1;
         fisLine1 = ""; fisLine2 = ""; fisLine3 = ""; fisLine4 = ""; fisLine5 = ""; fisLine6 = ""; fisLine7 = ""; fisLine8 = ""; //empty the lines from previous
