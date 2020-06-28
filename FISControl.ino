@@ -50,14 +50,14 @@ const uint8_t btn_CARS = 123;
 
 // FIS
 #ifdef Atmega32u4
-  const uint8_t FIS_CLK = 14; 
+  const uint8_t FIS_CLK  = 14; 
   const uint8_t FIS_DATA = 10; 
-  const uint8_t FIS_ENA = 16;
+  const uint8_t FIS_ENA  = 16;
 #endif
 #ifdef Atmega328
-  const uint8_t FIS_CLK = 4;
-  const uint8_t FIS_DATA = 5; 
-  const uint8_t FIS_ENA = 6; 
+  const uint8_t FIS_CLK  = 5;
+  const uint8_t FIS_DATA = 6; 
+  const uint8_t FIS_ENA  = 4; 
 #endif  
 
 // KWP connection settings
