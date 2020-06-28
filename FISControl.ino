@@ -19,8 +19,8 @@
   const uint8_t pinKLineTX = 4;
 #endif
 #ifdef Atmega328
-  const uint8_t pinKLineRX = 2;
-  const uint8_t pinKLineTX = 3;
+  const uint8_t pinKLineRX = 3;
+  const uint8_t pinKLineTX = 2;
 #endif
 KWP kwp(pinKLineRX, pinKLineTX);
 
